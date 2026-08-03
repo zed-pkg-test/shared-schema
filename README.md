@@ -1,14 +1,17 @@
 # shared-schema
 
-One JSON Schema shared by several repositories. It exists to be **vendored**,
-not installed: it is the payload for the three strategies compared in
-[`submodule-consumer`](https://github.com/zed-pkg-test/submodule-consumer) and
-[`subtree-consumer`](https://github.com/zed-pkg-test/subtree-consumer).
+One language-neutral JSON Schema shared by several repositories.
 
-Deliberately not a zed package. The question those fixtures ask is what
-`zed publish` does with content that arrived in the working tree by some
-*git* mechanism rather than through the registry — so this side has to stay a
-plain git repo.
+The repository intentionally supports two independent consumption paths:
+
+1. **Git vendoring** for `submodule-consumer` and `subtree-consumer`, which test how `zed publish` treats content already present through Git mechanisms.
+2. **Zed package installation** as `zedtest/shared-schema@1.0.0`, used by heterogeneous Node, Go, and Python consumer projects.
+
+Neither path replaces the other. The source bytes are identical, which lets CI compare Git-vendored and registry-installed provenance without maintaining duplicate schema repositories.
+
+## Contract
+
+`schemas/job-envelope.schema.json` defines a small cross-language job envelope with `greet` and `slugify` operations.
 
 ## License
 
