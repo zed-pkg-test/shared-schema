@@ -1,0 +1,52 @@
+name: generated artifact boundary
+
+on:
+  pull_request:
+    paths:
+      - ".gitignore"
+      - ".github/workflows/generated-artifact-boundary.yml"
+  push:
+    branches: [main]
+    paths:
+      - ".gitignore"
+      - ".github/workflows/generated-artifact-boundary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: generated-artifact-boundary-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ignore-contract:
+    name: ignore generated pack output only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out shared-schema
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          show-progress: false
+
+      - name: Verify generated and authored .zed boundaries
+        run: |
+          set -euo pipefail
+          mkdir -p .zed/pack
+          : > .zed/pack/example.tar.gz
+          : > .zed/authored-marker.toml
+
+          git check-ignore -q .zed/pack/example.tar.gz
+          if git check-ignore -q .zed/authored-marker.toml; then
+            echo "authored .zed configuration is unexpectedly ignored" >&2
+            exit 1
+          fi
+
+          status="$(git status --porcelain=v1 --untracked-files=all)"
+          grep -Fx '?? .zed/authored-marker.toml' <<<"$status"
+          if grep -Fq '.zed/pack/' <<<"$status"; then
+            echo "generated Zed pack output leaked into git status" >&2
+            exit 1
+          fi
