@@ -1,0 +1,38 @@
+name: shared schema package
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Validate package and schema
+        run: |
+          python3 - <<'PY'
+          import json, tomllib
+          from pathlib import Path
+          with Path('.zpkg.toml').open('rb') as f:
+              manifest = tomllib.load(f)
+          assert manifest['package']['org'] == 'zedtest'
+          assert manifest['package']['name'] == 'shared-schema'
+          assert manifest['package']['version'] == '1.0.0'
+          schema = json.loads(Path('schemas/job-envelope.schema.json').read_text())
+          assert schema['$schema'].endswith('2020-12/schema')
+          assert schema['required'] == ['id', 'kind', 'payload']
+          assert schema['properties']['kind']['enum'] == ['greet', 'slugify']
+          PY

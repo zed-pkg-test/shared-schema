@@ -1,0 +1,15 @@
+[package]
+org = "zedtest"
+name = "shared-schema"
+version = "1.0.0"
+description = "Language-neutral JSON Schema fixture shared by heterogeneous Zed consumers"
+license = "MIT"
+keywords = ["test", "schema", "polyglot", "fixture"]
+
+[package.repository]
+vcs = "git"
+url = "https://github.com/zed-pkg-test/shared-schema"
+
+[publish]
+include_readme = true
+tag_format = "v{version}"
