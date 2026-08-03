@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zed-pkg-test.github.io/shared-schema/job-envelope.schema.json",
+  "title": "JobEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "payload"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{2,63}$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["greet", "slugify"]
+    },
+    "payload": {
+      "type": "object"
+    }
+  }
+}
