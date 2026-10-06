@@ -30,12 +30,12 @@ jobs:
           set -euo pipefail
           git clone --quiet https://github.com/gha-indie-worker/gha-indie-worker-e2e.git rpc-mirror
           cd rpc-mirror
-          git checkout --quiet ec9836e75e8addab2cf4dd0114ae8cca14205a03
-          test "$(git rev-parse HEAD)" = "ec9836e75e8addab2cf4dd0114ae8cca14205a03"
+          git checkout --quiet 458c5dfcf9ae8c49b346a63b752d6ab5c912490f
+          test "$(git rev-parse HEAD)" = "458c5dfcf9ae8c49b346a63b752d6ab5c912490f"
 
-          grep -Fx "compiler_source=ores-truffle-oreslang/oreslang-source.java@43ec8b5e1a2c36e9f0b277dcc609f5383a326f37" rpc-ci/PROVENANCE.txt
-          grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@e24797c1d9b23ffa430c1e610d9205c112a79caf" rpc-ci/PROVENANCE.txt
-          grep -Fx "rpc_tree=24325867836dc2a8b18fa0cc370f32efbaa10735" rpc-ci/PROVENANCE.txt
+          grep -Fx "compiler_source=ores-truffle-oreslang/oreslang-source.java@9cd0dc9eae40669827062dcc05c5c1fe6a924895" rpc-ci/PROVENANCE.txt
+          grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@014ade3547aab9bb13b739a19b17f065597ab036" rpc-ci/PROVENANCE.txt
+          grep -Fx "rpc_tree=7c41aa026305f7cd08bd5003bd4f20d6a0cfaf91" rpc-ci/PROVENANCE.txt
 
           while read -r expected path; do
             actual="$(git hash-object "$path")"
@@ -46,7 +46,7 @@ jobs:
           done < rpc-ci/compiler-blobs.txt
           test "$(wc -l < rpc-ci/compiler-blobs.txt)" -eq 56
 
-          test "$(git rev-parse HEAD:rpc-ci/oreslang-rpc)" = "24325867836dc2a8b18fa0cc370f32efbaa10735"
+          test "$(git rev-parse HEAD:rpc-ci/oreslang-rpc)" = "7c41aa026305f7cd08bd5003bd4f20d6a0cfaf91"
           test "$(git hash-object rpc-ci/oreslang-http-routing/src/http_routing.ores)" = "7e448d4e13de1e0c163c73424c85b37b969aef3a"
 
       - name: Compile exact compiler mirror
