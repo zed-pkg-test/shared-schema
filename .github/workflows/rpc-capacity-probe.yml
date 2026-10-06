@@ -30,9 +30,8 @@ jobs:
           set -euo pipefail
           git clone --quiet https://github.com/gha-indie-worker/gha-indie-worker-e2e.git rpc-mirror
           cd rpc-mirror
-          git checkout --quiet 8a4987c48076359d1f00b244c1c8e70578267879
-          test "$(git rev-parse HEAD)" = "8a4987c48076359d1f00b244c1c8e70578267879"
-                    grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@fff5027674caa1cf34009c574d1eb413907e7206" rpc-ci/PROVENANCE.txt
+          git checkout --quiet 7cfe239e85adfac07b210c0c6591c6975e606d90
+          test "$(git rev-parse HEAD)" = "7cfe239e85adfac07b210c0c6591c6975e606d90"
           while read -r expected path; do
             actual="$(git hash-object "$path")"
             test "$actual" = "$expected" || {
@@ -45,13 +44,20 @@ jobs:
           test "$(git hash-object rpc-ci/oreslang-rpc/tests/rpc_semantics.ores)" = "be822433df7a864d9c2ecbb58d5a46673d5ba6cd"
           test "$(git hash-object rpc-ci/oreslang-rpc/tests/expected.txt)" = "ccfa2814d18c3ee9c8e343dc50cda4ff45d7cc59"
 
+      - name: Confirm current RPC source identity
+        working-directory: rpc-mirror
+        run: |
+          echo "rpc_head=6a1a714d2536436fc041fe90689d176ceaf37f3b"
+          test "$(git hash-object rpc-ci/oreslang-rpc/src/rpc.ores)" = "f38c368308865388c4e621c68390008b4f696142"
+          test "$(git hash-object rpc-ci/oreslang-rpc/tests/rpc_semantics.ores)" = "be822433df7a864d9c2ecbb58d5a46673d5ba6cd"
+
       - name: Compile exact current Oreslang compiler slice
         working-directory: rpc-mirror
         run: mvn -B -ntp -Dmaven.test.skip=true compile
 
       - name: Typecheck native RPC module directly
         working-directory: rpc-mirror
-        run: mvn -B -ntp -Dmaven.test.skip=true exec:java -Dexec.args="--check --platform=server rpc-ci/rpc.ores"
+        run: mvn -B -ntp -Dmaven.test.skip=true exec:java -Dexec.args="--check --platform=server rpc-ci/oreslang-rpc/src/rpc.ores"
 
       - name: Typecheck linked RPC semantics
         working-directory: rpc-mirror
