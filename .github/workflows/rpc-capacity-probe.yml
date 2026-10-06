@@ -30,12 +30,12 @@ jobs:
           set -euo pipefail
           git clone --quiet https://github.com/gha-indie-worker/gha-indie-worker-e2e.git rpc-mirror
           cd rpc-mirror
-          git checkout --quiet 24973eb4a79111d6e7d526ca8aa33fc5ded29216
-          test "$(git rev-parse HEAD)" = "24973eb4a79111d6e7d526ca8aa33fc5ded29216"
+          git checkout --quiet ec9836e75e8addab2cf4dd0114ae8cca14205a03
+          test "$(git rev-parse HEAD)" = "ec9836e75e8addab2cf4dd0114ae8cca14205a03"
 
-          grep -Fx "compiler_source=ores-truffle-oreslang/oreslang-source.java@f104a20b45bf305f19d88f540a400f7df37ac4b9" rpc-ci/PROVENANCE.txt
-          grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@e9af5b01942b31e0a4850d68849f0ef00cf788b5" rpc-ci/PROVENANCE.txt
-          grep -Fx "rpc_tree=c664428e3069de4b0c142e4e5f98ccfe163e7ba1" rpc-ci/PROVENANCE.txt
+          grep -Fx "compiler_source=ores-truffle-oreslang/oreslang-source.java@43ec8b5e1a2c36e9f0b277dcc609f5383a326f37" rpc-ci/PROVENANCE.txt
+          grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@e24797c1d9b23ffa430c1e610d9205c112a79caf" rpc-ci/PROVENANCE.txt
+          grep -Fx "rpc_tree=24325867836dc2a8b18fa0cc370f32efbaa10735" rpc-ci/PROVENANCE.txt
 
           while read -r expected path; do
             actual="$(git hash-object "$path")"
@@ -46,7 +46,7 @@ jobs:
           done < rpc-ci/compiler-blobs.txt
           test "$(wc -l < rpc-ci/compiler-blobs.txt)" -eq 56
 
-          test "$(git rev-parse HEAD:rpc-ci/oreslang-rpc)" = "c664428e3069de4b0c142e4e5f98ccfe163e7ba1"
+          test "$(git rev-parse HEAD:rpc-ci/oreslang-rpc)" = "24325867836dc2a8b18fa0cc370f32efbaa10735"
           test "$(git hash-object rpc-ci/oreslang-http-routing/src/http_routing.ores)" = "7e448d4e13de1e0c163c73424c85b37b969aef3a"
 
       - name: Compile exact compiler mirror
@@ -74,6 +74,10 @@ jobs:
       - name: Typecheck HTTP routing module directly
         working-directory: rpc-mirror
         run: mvn -B -ntp -Dmaven.test.skip=true exec:java -Dexec.args="--check --platform=server rpc-ci/oreslang-http-routing/src/http_routing.ores"
+
+      - name: Run native collection regression test
+        working-directory: rpc-mirror
+        run: mvn -B -ntp -Dtest=NativeCollectionMemberRuntimeTest test
 
       - name: Typecheck native RPC module directly
         working-directory: rpc-mirror
