@@ -1,0 +1,12 @@
+name: rpc capacity probe
+on:
+  push:
+    branches: ["feat/rpc-capacity-probe-20261006"]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - run: echo "runner-capacity-ok"
