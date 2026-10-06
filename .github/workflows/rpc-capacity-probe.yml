@@ -30,12 +30,12 @@ jobs:
           set -euo pipefail
           git clone --quiet https://github.com/gha-indie-worker/gha-indie-worker-e2e.git rpc-mirror
           cd rpc-mirror
-          git checkout --quiet e1f80435c5454f3d35dd1625b84b458440928261
-          test "$(git rev-parse HEAD)" = "e1f80435c5454f3d35dd1625b84b458440928261"
+          git checkout --quiet eb9dedf835c9cb3885053786c587a3036b06482a
+          test "$(git rev-parse HEAD)" = "eb9dedf835c9cb3885053786c587a3036b06482a"
 
-          grep -Fx "compiler_source=ores-truffle-oreslang/oreslang-source.java@9cd0dc9eae40669827062dcc05c5c1fe6a924895" rpc-ci/PROVENANCE.txt
-          grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@014ade3547aab9bb13b739a19b17f065597ab036" rpc-ci/PROVENANCE.txt
-          grep -Fx "rpc_tree=7c41aa026305f7cd08bd5003bd4f20d6a0cfaf91" rpc-ci/PROVENANCE.txt
+          grep -Fx "compiler_source=ores-truffle-oreslang/oreslang-source.java@c2c1d29f4ea6a043119ae25b736e2d4fd505cf9c" rpc-ci/PROVENANCE.txt
+          grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@6d09f161a22dff13c9267bbeb756194f8968c085" rpc-ci/PROVENANCE.txt
+          grep -Fx "rpc_tree=a4bc708ea0e3977fa0f9d3e295f4c0c00ee1b5f3" rpc-ci/PROVENANCE.txt
           grep -Fx "router_source=ores-truffle-oreslang/oreslang-http-routing@905ca66ba3069430882be46bc76a20b322d77d40" rpc-ci/PROVENANCE.txt
           grep -Fx "router_blob=c0c831608f4cdb1442616e7bd89f92c7145669e5" rpc-ci/PROVENANCE.txt
 
@@ -48,12 +48,16 @@ jobs:
           done < rpc-ci/compiler-blobs.txt
           test "$(wc -l < rpc-ci/compiler-blobs.txt)" -eq 56
 
-          test "$(git rev-parse HEAD:rpc-ci/oreslang-rpc)" = "7c41aa026305f7cd08bd5003bd4f20d6a0cfaf91"
+          test "$(git rev-parse HEAD:rpc-ci/oreslang-rpc)" = "a4bc708ea0e3977fa0f9d3e295f4c0c00ee1b5f3"
           test "$(git hash-object rpc-ci/oreslang-http-routing/src/http_routing.ores)" = "c0c831608f4cdb1442616e7bd89f92c7145669e5"
 
       - name: Compile exact compiler mirror
         working-directory: rpc-mirror
         run: mvn -B -ntp -Dmaven.test.skip=true compile
+
+      - name: Run nested else-body parser regression
+        working-directory: rpc-mirror
+        run: mvn -B -ntp -Dtest='ParserTest#elseBodyMayBeginWithNestedIfOnFollowingLine' test
 
       - name: Typecheck native collection regression
         working-directory: rpc-mirror
