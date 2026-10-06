@@ -47,7 +47,11 @@ jobs:
         working-directory: rpc-mirror
         run: mvn -B -ntp -Dmaven.test.skip=true compile
 
-      - name: Typecheck native RPC library
+      - name: Typecheck native RPC module directly
+        working-directory: rpc-mirror
+        run: mvn -B -ntp -Dmaven.test.skip=true exec:java -Dexec.args="--check --platform=server rpc-ci/rpc.ores"
+
+      - name: Typecheck linked RPC semantics
         working-directory: rpc-mirror
         run: mvn -B -ntp -Dmaven.test.skip=true exec:java -Dexec.args="--check --platform=server rpc-ci/main.ores"
 
