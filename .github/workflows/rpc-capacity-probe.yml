@@ -30,8 +30,8 @@ jobs:
           set -euo pipefail
           git clone --quiet https://github.com/gha-indie-worker/gha-indie-worker-e2e.git rpc-mirror
           cd rpc-mirror
-          git checkout --quiet 8788e121ae3aff201a7f9061c4c63bbe6168b7ea
-          test "$(git rev-parse HEAD)" = "8788e121ae3aff201a7f9061c4c63bbe6168b7ea"
+          git checkout --quiet a2914c6525ec8d98a9ed5d8298029801bee1dd6d
+          test "$(git rev-parse HEAD)" = "a2914c6525ec8d98a9ed5d8298029801bee1dd6d"
 
           grep -Fx "compiler_source=ores-truffle-oreslang/oreslang-source.java@f104a20b45bf305f19d88f540a400f7df37ac4b9" rpc-ci/PROVENANCE.txt
           grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@cbd51a8c8abf23c865f18c10391067b94a85bc17" rpc-ci/PROVENANCE.txt
@@ -52,6 +52,22 @@ jobs:
       - name: Compile exact compiler mirror
         working-directory: rpc-mirror
         run: mvn -B -ntp -Dmaven.test.skip=true compile
+
+      - name: Typecheck native collection regression
+        working-directory: rpc-mirror
+        run: mvn -B -ntp -Dmaven.test.skip=true exec:java -Dexec.args="--check --platform=server rpc-ci/collection-runtime/main.ores"
+
+      - name: Execute native collection regression
+        working-directory: rpc-mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/collection-runtime/main.ores" > rpc-ci/collection-runtime/actual.txt
+          diff -u rpc-ci/collection-runtime/expected.txt rpc-ci/collection-runtime/actual.txt
+
+      - name: Typecheck HTTP routing module directly
+        working-directory: rpc-mirror
+        run: mvn -B -ntp -Dmaven.test.skip=true exec:java -Dexec.args="--check --platform=server rpc-ci/oreslang-http-routing/src/http_routing.ores"
 
       - name: Typecheck native RPC module directly
         working-directory: rpc-mirror
