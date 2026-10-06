@@ -32,8 +32,7 @@ jobs:
           cd rpc-mirror
           git checkout --quiet 8a4987c48076359d1f00b244c1c8e70578267879
           test "$(git rev-parse HEAD)" = "8a4987c48076359d1f00b244c1c8e70578267879"
-          grep -Fx "compiler_source=ores-truffle-oreslang/oreslang-source.java@3a41bed317060cc7cbab1c6be3a0ea92913c6fc9" rpc-ci/PROVENANCE.txt
-          grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@fff5027674caa1cf34009c574d1eb413907e7206" rpc-ci/PROVENANCE.txt
+                    grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@fff5027674caa1cf34009c574d1eb413907e7206" rpc-ci/PROVENANCE.txt
           while read -r expected path; do
             actual="$(git hash-object "$path")"
             test "$actual" = "$expected" || {
@@ -42,6 +41,9 @@ jobs:
             }
           done < rpc-ci/compiler-blobs.txt
           test "$(wc -l < rpc-ci/compiler-blobs.txt)" -eq 56
+          test "$(git hash-object rpc-ci/oreslang-rpc/src/rpc.ores)" = "f38c368308865388c4e621c68390008b4f696142"
+          test "$(git hash-object rpc-ci/oreslang-rpc/tests/rpc_semantics.ores)" = "be822433df7a864d9c2ecbb58d5a46673d5ba6cd"
+          test "$(git hash-object rpc-ci/oreslang-rpc/tests/expected.txt)" = "ccfa2814d18c3ee9c8e343dc50cda4ff45d7cc59"
 
       - name: Compile exact current Oreslang compiler slice
         working-directory: rpc-mirror
@@ -53,18 +55,18 @@ jobs:
 
       - name: Typecheck linked RPC semantics
         working-directory: rpc-mirror
-        run: mvn -B -ntp -Dmaven.test.skip=true exec:java -Dexec.args="--check --platform=server rpc-ci/main.ores"
+        run: mvn -B -ntp -Dmaven.test.skip=true exec:java -Dexec.args="--check --platform=server rpc-ci/oreslang-rpc/tests/rpc_semantics.ores"
 
       - name: Execute RPC semantics and generators
         working-directory: rpc-mirror
         shell: bash
         run: |
           set -euo pipefail
-          if ! mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/main.ores" > rpc-ci/actual.txt 2> rpc-ci/runtime.err; then
+          if ! mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/oreslang-rpc/tests/rpc_semantics.ores" > rpc-ci/oreslang-rpc/tests/actual.txt 2> rpc-ci/runtime.err; then
             echo "=== RPC stdout before failure ==="
-            cat rpc-ci/actual.txt || true
+            cat rpc-ci/oreslang-rpc/tests/actual.txt || true
             echo "=== RPC stderr ==="
             cat rpc-ci/runtime.err || true
             exit 1
           fi
-          diff -u rpc-ci/expected.txt rpc-ci/actual.txt
+          diff -u rpc-ci/oreslang-rpc/tests/expected.txt rpc-ci/oreslang-rpc/tests/actual.txt
