@@ -30,11 +30,12 @@ jobs:
           set -euo pipefail
           git clone --quiet https://github.com/gha-indie-worker/gha-indie-worker-e2e.git rpc-mirror
           cd rpc-mirror
-          git checkout --quiet 28404ad4706564a5d4dad282257b63f92d247c43
-          test "$(git rev-parse HEAD)" = "28404ad4706564a5d4dad282257b63f92d247c43"
+          git checkout --quiet d70c393cfd323679fac2582b908f8dabed3c67e6
+          test "$(git rev-parse HEAD)" = "d70c393cfd323679fac2582b908f8dabed3c67e6"
 
           grep -Fx "compiler_source=ores-truffle-oreslang/oreslang-source.java@f104a20b45bf305f19d88f540a400f7df37ac4b9" rpc-ci/PROVENANCE.txt
-          grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@552a2d213a6fb1b9e7fbc80cf59d0cfdd86a9027" rpc-ci/PROVENANCE.txt
+          grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@7e7207648e343a4f25dc05e76b437723aaeda74b" rpc-ci/PROVENANCE.txt
+          grep -Fx "rpc_tree=b31f7b2ec78566b19e9e4ea74c8b94d7f4f1611a" rpc-ci/PROVENANCE.txt
 
           while read -r expected path; do
             actual="$(git hash-object "$path")"
@@ -45,9 +46,7 @@ jobs:
           done < rpc-ci/compiler-blobs.txt
           test "$(wc -l < rpc-ci/compiler-blobs.txt)" -eq 56
 
-          test "$(git hash-object rpc-ci/oreslang-rpc/src/rpc.ores)" = "a79de9235264c0c0915c5036e2fab46997ed2faa"
-          test "$(git hash-object rpc-ci/oreslang-rpc/tests/rpc_semantics.ores)" = "be822433df7a864d9c2ecbb58d5a46673d5ba6cd"
-          test "$(git hash-object rpc-ci/oreslang-rpc/tests/expected.txt)" = "9d5902ecdc2dae97d0bf460146e3cadfea8c1a1d"
+          test "$(git rev-parse HEAD:rpc-ci/oreslang-rpc)" = "b31f7b2ec78566b19e9e4ea74c8b94d7f4f1611a"
           test "$(git hash-object rpc-ci/oreslang-http-routing/src/http_routing.ores)" = "7e448d4e13de1e0c163c73424c85b37b969aef3a"
 
       - name: Compile exact compiler mirror
@@ -67,7 +66,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/oreslang-rpc/tests/rpc_semantics.ores" > rpc-ci/oreslang-rpc/tests/actual.txt
+          if ! mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/oreslang-rpc/tests/rpc_semantics.ores" > rpc-ci/oreslang-rpc/tests/actual.txt 2> rpc-ci/runtime.err; then
+            cat rpc-ci/oreslang-rpc/tests/actual.txt || true
+            cat rpc-ci/runtime.err || true
+            exit 1
+          fi
           diff -u rpc-ci/oreslang-rpc/tests/expected.txt rpc-ci/oreslang-rpc/tests/actual.txt
 
       - name: Typecheck RPC HTTP-routing integration
