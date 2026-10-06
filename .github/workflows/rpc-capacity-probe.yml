@@ -30,8 +30,8 @@ jobs:
           set -euo pipefail
           git clone --quiet https://github.com/gha-indie-worker/gha-indie-worker-e2e.git rpc-mirror
           cd rpc-mirror
-          git checkout --quiet c9f253a5233b8c3b3c991e1b97fb53f63fd8d939
-          test "$(git rev-parse HEAD)" = "c9f253a5233b8c3b3c991e1b97fb53f63fd8d939"
+          git checkout --quiet 2ed709f9949371a4c7b3159dcb37eff0312226c8
+          test "$(git rev-parse HEAD)" = "2ed709f9949371a4c7b3159dcb37eff0312226c8"
           while read -r expected path; do
             actual="$(git hash-object "$path")"
             test "$actual" = "$expected" || {
