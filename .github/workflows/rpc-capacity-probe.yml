@@ -24,14 +24,18 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Fetch immutable public mirror and verify compiler provenance
+      - name: Fetch immutable mirror and verify provenance
         shell: bash
         run: |
           set -euo pipefail
           git clone --quiet https://github.com/gha-indie-worker/gha-indie-worker-e2e.git rpc-mirror
           cd rpc-mirror
-          git checkout --quiet 2ed709f9949371a4c7b3159dcb37eff0312226c8
-          test "$(git rev-parse HEAD)" = "2ed709f9949371a4c7b3159dcb37eff0312226c8"
+          git checkout --quiet 28404ad4706564a5d4dad282257b63f92d247c43
+          test "$(git rev-parse HEAD)" = "28404ad4706564a5d4dad282257b63f92d247c43"
+
+          grep -Fx "compiler_source=ores-truffle-oreslang/oreslang-source.java@f104a20b45bf305f19d88f540a400f7df37ac4b9" rpc-ci/PROVENANCE.txt
+          grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@552a2d213a6fb1b9e7fbc80cf59d0cfdd86a9027" rpc-ci/PROVENANCE.txt
+
           while read -r expected path; do
             actual="$(git hash-object "$path")"
             test "$actual" = "$expected" || {
@@ -40,18 +44,13 @@ jobs:
             }
           done < rpc-ci/compiler-blobs.txt
           test "$(wc -l < rpc-ci/compiler-blobs.txt)" -eq 56
-          test "$(git hash-object rpc-ci/oreslang-rpc/src/rpc.ores)" = "f38c368308865388c4e621c68390008b4f696142"
-          test "$(git hash-object rpc-ci/oreslang-rpc/tests/rpc_semantics.ores)" = "be822433df7a864d9c2ecbb58d5a46673d5ba6cd"
-          test "$(git hash-object rpc-ci/oreslang-rpc/tests/expected.txt)" = "ccfa2814d18c3ee9c8e343dc50cda4ff45d7cc59"
 
-      - name: Confirm current RPC source identity
-        working-directory: rpc-mirror
-        run: |
-          echo "rpc_head=6a1a714d2536436fc041fe90689d176ceaf37f3b"
-          test "$(git hash-object rpc-ci/oreslang-rpc/src/rpc.ores)" = "f38c368308865388c4e621c68390008b4f696142"
+          test "$(git hash-object rpc-ci/oreslang-rpc/src/rpc.ores)" = "a79de9235264c0c0915c5036e2fab46997ed2faa"
           test "$(git hash-object rpc-ci/oreslang-rpc/tests/rpc_semantics.ores)" = "be822433df7a864d9c2ecbb58d5a46673d5ba6cd"
+          test "$(git hash-object rpc-ci/oreslang-rpc/tests/expected.txt)" = "9d5902ecdc2dae97d0bf460146e3cadfea8c1a1d"
+          test "$(git hash-object rpc-ci/oreslang-http-routing/src/http_routing.ores)" = "7e448d4e13de1e0c163c73424c85b37b969aef3a"
 
-      - name: Compile exact current Oreslang compiler slice
+      - name: Compile exact compiler mirror
         working-directory: rpc-mirror
         run: mvn -B -ntp -Dmaven.test.skip=true compile
 
@@ -68,11 +67,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if ! mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/oreslang-rpc/tests/rpc_semantics.ores" > rpc-ci/oreslang-rpc/tests/actual.txt 2> rpc-ci/runtime.err; then
-            echo "=== RPC stdout before failure ==="
-            cat rpc-ci/oreslang-rpc/tests/actual.txt || true
-            echo "=== RPC stderr ==="
-            cat rpc-ci/runtime.err || true
-            exit 1
-          fi
+          mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/oreslang-rpc/tests/rpc_semantics.ores" > rpc-ci/oreslang-rpc/tests/actual.txt
           diff -u rpc-ci/oreslang-rpc/tests/expected.txt rpc-ci/oreslang-rpc/tests/actual.txt
+
+      - name: Typecheck RPC HTTP-routing integration
+        working-directory: rpc-mirror
+        run: mvn -B -ntp -Dmaven.test.skip=true exec:java -Dexec.args="--check --platform=server rpc-ci/http-interop/main.ores"
+
+      - name: Execute RPC HTTP-routing round trip
+        working-directory: rpc-mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/http-interop/main.ores" > rpc-ci/http-interop/actual.txt
+          diff -u rpc-ci/http-interop/expected.txt rpc-ci/http-interop/actual.txt
