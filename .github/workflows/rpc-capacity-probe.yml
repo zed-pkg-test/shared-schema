@@ -1,12 +1,60 @@
-name: rpc capacity probe
+name: rpc native validation
+
 on:
   push:
     branches: ["feat/rpc-capacity-probe-20261006"]
+
 permissions:
   contents: read
+
+concurrency:
+  group: rpc-native-validation-zed-test
+  cancel-in-progress: true
+
 jobs:
-  probe:
+  rpc:
     runs-on: ubuntu-24.04
-    timeout-minutes: 2
+    timeout-minutes: 15
     steps:
-      - run: echo "runner-capacity-ok"
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          version: '25.3'
+          java-version: '25'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: maven
+
+      - name: Fetch immutable public mirror and verify compiler provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/gha-indie-worker/gha-indie-worker-e2e.git rpc-mirror
+          cd rpc-mirror
+          git checkout --quiet 14b8ff42da3744f22bcfc2fc71a710c4a4716f4e
+          test "$(git rev-parse HEAD)" = "14b8ff42da3744f22bcfc2fc71a710c4a4716f4e"
+          grep -Fx "compiler_source=ores-truffle-oreslang/oreslang-source.java@3a41bed317060cc7cbab1c6be3a0ea92913c6fc9" rpc-ci/PROVENANCE.txt
+          while read -r expected path; do
+            actual="$(git hash-object "$path")"
+            test "$actual" = "$expected" || {
+              echo "::error file=$path::compiler blob mismatch expected=$expected actual=$actual"
+              exit 1
+            }
+          done < rpc-ci/compiler-blobs.txt
+          test "$(wc -l < rpc-ci/compiler-blobs.txt)" -eq 56
+
+      - name: Compile exact current Oreslang compiler slice
+        working-directory: rpc-mirror
+        run: mvn -B -ntp -Dmaven.test.skip=true compile
+
+      - name: Typecheck native RPC library
+        working-directory: rpc-mirror
+        run: mvn -B -ntp -Dmaven.test.skip=true exec:java -Dexec.args="--check --platform=server rpc-ci/main.ores"
+
+      - name: Execute RPC semantics and generators
+        working-directory: rpc-mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/main.ores" > rpc-ci/actual.txt
+          diff -u rpc-ci/expected.txt rpc-ci/actual.txt
