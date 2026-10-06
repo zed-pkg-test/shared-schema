@@ -62,7 +62,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/collection-runtime/main.ores" > rpc-ci/collection-runtime/actual.txt
+          if ! mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/collection-runtime/main.ores" > rpc-ci/collection-runtime/actual.txt 2> rpc-ci/collection-runtime/runtime.err; then
+            echo "=== collection stdout before failure ==="
+            cat rpc-ci/collection-runtime/actual.txt || true
+            echo "=== collection stderr ==="
+            cat rpc-ci/collection-runtime/runtime.err || true
+            exit 1
+          fi
           diff -u rpc-ci/collection-runtime/expected.txt rpc-ci/collection-runtime/actual.txt
 
       - name: Typecheck HTTP routing module directly
